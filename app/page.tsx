@@ -7,7 +7,6 @@ export default function Home() {
   const [result, setResult] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchMeta, setSearchMeta] = useState<any>(null);
-  const [displayCount, setDisplayCount] = useState(30);
 
   const search = async () => {
     if (!query.trim()) return;
@@ -18,12 +17,10 @@ export default function Home() {
       const res = await fetch('/api/search-products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, displayCount }),
+        body: JSON.stringify({ query }),
       });
 
       const text = await res.text();
-      console.log('API raw response:', text);
-
       const data = text ? JSON.parse(text) : { items: [] };
 
       if (!res.ok) {
@@ -32,7 +29,6 @@ export default function Home() {
             {
               error: data.error || '검색 API 오류',
               detail: data.detail || null,
-              raw: data.raw || null,
             },
             null,
             2
@@ -59,10 +55,10 @@ export default function Home() {
     <div style={{ padding: 40, color: 'white' }}>
       <h1>AI 쇼핑 검색</h1>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20 }}>
         <input
           style={{
-            width: 400,
+            width: 500,
             padding: 10,
             color: 'white',
             backgroundColor: '#111',
@@ -72,28 +68,10 @@ export default function Home() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              search();
-            }
+            if (e.key === 'Enter') search();
           }}
           placeholder="예: 20만원 이하 쇼파커버 제외한 쇼파 찾아줘"
         />
-
-        <select
-          value={displayCount}
-          onChange={(e) => setDisplayCount(Number(e.target.value))}
-          style={{
-            padding: 10,
-            color: 'white',
-            backgroundColor: '#111',
-            border: '1px solid #444',
-            borderRadius: 8,
-          }}
-        >
-          <option value={30}>30개</option>
-          <option value={40}>40개</option>
-          <option value={50}>50개</option>
-        </select>
 
         <button
           onClick={search}
@@ -120,35 +98,34 @@ export default function Home() {
             backgroundColor: '#111',
           }}
         >
-          <h3 style={{ marginTop: 0 }}>검색 조건</h3>
-
+          <h3 style={{ marginTop: 0 }}>분석된 조건</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              원문: {searchMeta.originalQuery || '-'}
+              원문: {searchMeta.originalQuery}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              검색어: {searchMeta.normalizedQuery || '-'}
+              네이버 검색어: {searchMeta.naverQuery}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              물건: {searchMeta.productKeyword || '-'}
+              물건: {searchMeta.analyzed?.product_keyword || '-'}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              가격: {searchMeta.maxPrice ? `${searchMeta.maxPrice.toLocaleString()}원` : '제한 없음'}
+              포함어: {searchMeta.analyzed?.include_terms?.length ? searchMeta.analyzed.include_terms.join(', ') : '없음'}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              제외어: {searchMeta.excludeTerms?.length ? searchMeta.excludeTerms.join(', ') : '없음'}
+              제외어: {searchMeta.analyzed?.exclude_terms?.length ? searchMeta.analyzed.exclude_terms.join(', ') : '없음'}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              표시 개수: {searchMeta.displayCount || displayCount}개
+              최대가격: {searchMeta.analyzed?.max_price ? `${Number(searchMeta.analyzed.max_price).toLocaleString()}원` : '없음'}
             </div>
-
             <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
-              결과 수: {searchMeta.totalFiltered ?? result.length}개
+              최소가격: {searchMeta.analyzed?.min_price ? `${Number(searchMeta.analyzed.min_price).toLocaleString()}원` : '없음'}
+            </div>
+            <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
+              표시개수: {searchMeta.analyzed?.display_count || 30}개
+            </div>
+            <div style={{ padding: '6px 10px', border: '1px solid #444', borderRadius: 999 }}>
+              결과수: {searchMeta.totalFiltered ?? result.length}개
             </div>
           </div>
         </div>
